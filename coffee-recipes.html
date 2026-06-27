@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coffee Recipe Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:       #1a1410;
+    --parchment: #f6f0e8;
+    --cream:     #fdfaf5;
+    --roast:     #3b1f0e;
+    --copper:    #b5622a;
+    --gold:      #c9943a;
+    --mist:      #e8e0d4;
+    --sage:      #6b7c6e;
+  }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--roast);
+    padding: 48px 40px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: rgba(181,98,42,.18);
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 60px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(201,148,58,.1);
+  }
+  .header-inner { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; }
+  .header-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  header p {
+    color: rgba(253,250,245,.55);
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+  /* ── FILTERS ── */
+  .filters-bar {
+    background: var(--cream);
+    border-bottom: 1px solid var(--mist);
+    padding: 16px 40px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .filter-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-right: 4px;
+  }
+  .filter-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--mist);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all .18s;
+  }
+  .filter-btn:hover { border-color: var(--copper); color: var(--copper); }
+  .filter-btn.active { background: var(--roast); color: var(--cream); border-color: var(--roast); }
+
+  /* ── GRID ── */
+  .recipes-grid {
+    max-width: 960px;
+    margin: 40px auto;
+    padding: 0 24px 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--cream);
+    border: 1px solid var(--mist);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow .2s, transform .2s;
+    cursor: pointer;
+  }
+  .card:hover { box-shadow: 0 8px 32px rgba(59,31,14,.12); transform: translateY(-2px); }
+  .card.hidden { display: none; }
+
+  .card-header {
+    background: var(--roast);
+    padding: 20px 22px 16px;
+    position: relative;
+  }
+  .card-origin-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .card-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--cream);
+    line-height: 1.25;
+  }
+  .card-roaster {
+    font-size: 12px;
+    color: rgba(253,250,245,.5);
+    margin-top: 4px;
+  }
+
+  .card-body { padding: 18px 22px; flex: 1; }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .tag {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+  .tag-process { background: #e8ddd0; color: var(--roast); }
+  .tag-method  { background: #dde4dd; color: #2d4a30; }
+  .tag-approved { background: #fff3e0; color: #a0540a; border: 1px solid #e8c08a; }
+
+  .card-params {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+  }
+  .param { display: flex; flex-direction: column; }
+  .param-label {
+    font-size: 9px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+  .param-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .card-divider { height: 1px; background: var(--mist); margin: 14px 0; }
+
+  .card-notes {
+    font-size: 12.5px;
+    color: #5a4e44;
+    line-height: 1.6;
+  }
+
+  /* ── EXPANDED MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,20,16,.65);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: 4px;
+    max-width: 620px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 24px 80px rgba(26,20,16,.35);
+  }
+  .modal-header {
+    background: var(--roast);
+    padding: 28px 32px 22px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .modal-close {
+    position: absolute;
+    top: 20px; right: 24px;
+    background: none;
+    border: none;
+    color: rgba(253,250,245,.6);
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color .15s;
+  }
+  .modal-close:hover { color: var(--cream); }
+
+  .modal-body { padding: 28px 32px 36px; }
+
+  .step-list { list-style: none; }
+  .step-text strong {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    color: var(--copper);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .step-item { display: flex; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--mist); }
+  .step-item:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--copper);
+    font-weight: 500;
+    min-width: 24px;
+    padding-top: 2px;
+  }
+  .step-text { font-size: 13.5px; line-height: 1.65; color: #3d342c; }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--roast);
+    margin-bottom: 14px;
+    margin-top: 24px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--mist);
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  .full-params {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .full-param {
+    background: var(--parchment);
+    border-radius: 3px;
+    padding: 10px 14px;
+  }
+  .full-param .param-label { font-size: 9px; }
+  .full-param .param-value { font-size: 14px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--sage);
+  }
+  .empty-state .big-icon { font-size: 40px; margin-bottom: 16px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── APPROVED STAR ── */
+  .star { color: var(--gold); font-size: 14px; }
+
+  @media (max-width: 600px) {
+    .filters-bar { padding: 12px 16px; }
+    .recipes-grid { padding: 0 12px 40px; gap: 16px; }
+    .full-params { grid-template-columns: repeat(2, 1fr); }
+    .modal-body { padding: 20px 20px 28px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-label">Personal Recipe Collection</div>
+    <h1>The Coffee Book</h1>
+    <p>Curated recipes by origin · process · roaster</p>
+  </div>
+</header>
+
+<div class="filters-bar">
+  <span class="filter-label">Filter</span>
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="approved">★ Approved</button>
+  <button class="filter-btn" data-filter="espresso">☕ Espresso</button>
+  <button class="filter-btn" data-filter="Ethiopia">Ethiopia</button>
+  <button class="filter-btn" data-filter="Colombia">Colombia</button>
+  <button class="filter-btn" data-filter="Costa Rica">Costa Rica</button>
+  <button class="filter-btn" data-filter="washed">Washed</button>
+  <button class="filter-btn" data-filter="natural">Natural</button>
+  <button class="filter-btn" data-filter="honey">Honey</button>
+  <button class="filter-btn" data-filter="yeast">Yeast</button>
+</div>
+
+<div class="recipes-grid" id="grid">
+
+
+  <!-- R4: Colombia La Cabana – Iced V60 -->
+  <div class="card" data-origin="Colombia" data-process="washed" data-approved="false" data-type="pourover"
+       onclick="openModal('r4')">
+    <div class="card-header">
+      <span class="card-origin-badge">Colombia · La Cabana</span>
+      <div class="card-name">Sweet Washed<br>Iced V60</div>
+      <div class="card-roaster">Local Roaster · La Cabana</div>
+    </div>
+    <div class="card-body">
+      <div class="card-tags">
+        <span class="tag tag-process">Washed</span>
+        <span class="tag tag-method">V60</span>
+        <span class="tag" style="background:#ddeef7;color:#1a4f6e">🧊 Iced</span>
+      </div>
+      <div class="card-params">
+        <div class="param"><span class="param-label">Coffee</span><span class="param-value">17 g</span></div>
+        <div class="param"><span class="param-label">Hot water</span><span class="param-value">170 ml</span></div>
+        <div class="param"><span class="param-label">Ice</span><span class="param-value">85 g</span></div>
+        <div class="param"><span class="param-label">Temp</span><span class="param-value">94 °C</span></div>
+        <div class="param"><span class="param-label">Grind</span><span class="param-value">Medium-fine</span></div>
+        <div class="param"><span class="param-label">Total time</span><span class="param-value">3:00 min</span></div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-notes">Green apple, strawberry, caramel on ice. Brewed concentrated directly onto ice — crisp and sweet.</div>
+    </div>
+  </div>
+
+  <!-- R5: Colombia La Cabana – Iced Espresso -->
+  <div class="card" data-origin="Colombia" data-process="washed" data-approved="false" data-type="espresso"
+       onclick="openModal('r5')">
+    <div class="card-header" style="background:#1a0a04">
+      <span class="card-origin-badge">Colombia · La Cabana</span>
+      <div class="card-name">Caramel Shot<br>Iced Espresso</div>
+      <div class="card-roaster">Local Roaster · DeLonghi Dedica</div>
+    </div>
+    <div class="card-body">
+      <div class="card-tags">
+        <span class="tag tag-process">Washed</span>
+        <span class="tag tag-method" style="background:#f0e6d3;color:#5c3010">Espresso</span>
+        <span class="tag" style="background:#ddeef7;color:#1a4f6e">🧊 Iced</span>
+      </div>
+      <div class="card-params">
+        <div class="param"><span class="param-label">Dose</span><span class="param-value">17 g</span></div>
+        <div class="param"><span class="param-label">Yield</span><span class="param-value">34 g</span></div>
+        <div class="param"><span class="param-label">Ice</span><span class="param-value">60–80 g</span></div>
+        <div class="param"><span class="param-label">Temp</span><span class="param-value">94 °C</span></div>
+        <div class="param"><span class="param-label">Grind</span><span class="param-value">Fine</span></div>
+        <div class="param"><span class="param-label">Shot time</span><span class="param-value">28–32 s</span></div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-notes">Caramel sweetness, apple acidity, thick crema — pulled directly over ice. Clean and bright.</div>
+    </div>
+  </div>
+
+  <!-- R6: Costa Rica El Mango – Iced AeroPress -->
+  <div class="card" data-origin="Costa Rica" data-process="honey" data-approved="false" data-type="pourover"
+       onclick="openModal('r6')">
+    <div class="card-header">
+      <span class="card-origin-badge">Costa Rica · El Mango</span>
+      <div class="card-name">Tropical Honey<br>Iced AeroPress</div>
+      <div class="card-roaster">ضحى محمصة · El Mango</div>
+    </div>
+    <div class="card-body">
+      <div class="card-tags">
+        <span class="tag tag-process">Honey</span>
+        <span class="tag tag-method">AeroPress</span>
+        <span class="tag" style="background:#ddeef7;color:#1a4f6e">🧊 Iced</span>
+      </div>
+      <div class="card-params">
+        <div class="param"><span class="param-label">Coffee</span><span class="param-value">20 g</span></div>
+        <div class="param"><span class="param-label">Hot water</span><span class="param-value">140 ml</span></div>
+        <div class="param"><span class="param-label">Ice</span><span class="param-value">80 g</span></div>
+        <div class="param"><span class="param-label">Temp</span><span class="param-value">88 °C</span></div>
+        <div class="param"><span class="param-label">Grind</span><span class="param-value">Medium-fine</span></div>
+        <div class="param"><span class="param-label">Total time</span><span class="param-value">2:30 min</span></div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-notes">Mango, blueberry, floral sweetness — pressed concentrated over ice. Syrupy and tropical.</div>
+    </div>
+  </div>
+
+  <!-- R7: Costa Rica El Mango – Iced Espresso -->
+  <div class="card" data-origin="Costa Rica" data-process="honey" data-approved="false" data-type="espresso"
+       onclick="openModal('r7')">
+    <div class="card-header" style="background:#1a0a04">
+      <span class="card-origin-badge">Costa Rica · El Mango</span>
+      <div class="card-name">Mango Honey<br>Iced Espresso</div>
+      <div class="card-roaster">ضحى محمصة · DeLonghi Dedica</div>
+    </div>
+    <div class="card-body">
+      <div class="card-tags">
+        <span class="tag tag-process">Honey</span>
+        <span class="tag tag-method" style="background:#f0e6d3;color:#5c3010">Espresso</span>
+        <span class="tag" style="background:#ddeef7;color:#1a4f6e">🧊 Iced</span>
+      </div>
+      <div class="card-params">
+        <div class="param"><span class="param-label">Dose</span><span class="param-value">17 g</span></div>
+        <div class="param"><span class="param-label">Yield</span><span class="param-value">38 g</span></div>
+        <div class="param"><span class="param-label">Ice</span><span class="param-value">60–80 g</span></div>
+        <div class="param"><span class="param-label">Temp</span><span class="param-value">92 °C</span></div>
+        <div class="param"><span class="param-label">Grind</span><span class="param-value">Fine</span></div>
+        <div class="param"><span class="param-label">Shot time</span><span class="param-value">30–34 s</span></div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-notes">Tropical mango, blueberry — shot pulled over ice. Creamy, fruity, zero bitterness.</div>
+    </div>
+  </div>
+
+  <!-- R8: Ethiopia Chelchele – Iced V60 -->
+  <div class="card" data-origin="Ethiopia" data-process="yeast" data-approved="false" data-type="pourover"
+       onclick="openModal('r8')">
+    <div class="card-header">
+      <span class="card-origin-badge">Ethiopia · Chelchele</span>
+      <div class="card-name">Wild Yeast<br>Iced V60</div>
+      <div class="card-roaster">Caffeine Batch · Chelchele</div>
+    </div>
+    <div class="card-body">
+      <div class="card-tags">
+        <span class="tag tag-process">Yeast</span>
+        <span class="tag tag-method">V60</span>
+        <span class="tag" style="background:#ddeef7;color:#1a4f6e">🧊 Iced</span>
+      </div>
+      <div class="card-params">
+        <div class="param"><span class="param-label">Coffee</span><span class="param-value">16 g</span></div>
+        <div class="param"><span class="param-label">Hot water</span><span class="param-value">160 ml</span></div>
+        <div class="param"><span class="param-label">Ice</span><span class="param-value">80 g</span></div>
+        <div class="param"><span class="param-label">Temp</span><span class="param-value">93 °C</span></div>
+        <div class="param"><span class="param-label">Grind</span><span class="param-value">Medium-fine</span></div>
+        <div class="param"><span class="param-label">Total time</span><span class="param-value">2:45 min</span></div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-notes">Blueberry, red apple, orange blossom on ice. Cold amplifies the fruit and tames the fermentation.</div>
+    </div>
+  </div>
+
+  <!-- R9: Ethiopia Chelchele – Iced Espresso -->
+  <div class="card" data-origin="Ethiopia" data-process="yeast" data-approved="false" data-type="espresso"
+       onclick="openModal('r9')">
+    <div class="card-header" style="background:#1a0a04">
+      <span class="card-origin-badge">Ethiopia · Chelchele</span>
+      <div class="card-name">Fermented Fruit<br>Iced Espresso</div>
+      <div class="card-roaster">Caffeine Batch · DeLonghi Dedica</div>
+    </div>
+    <div class="card-body">
+      <div class="card-tags">
+        <span class="tag tag-process">Yeast</span>
+        <span class="tag tag-method" style="background:#f0e6d3;color:#5c3010">Espresso</span>
+        <span class="tag" style="background:#ddeef7;color:#1a4f6e">🧊 Iced</span>
+      </div>
+      <div class="card-params">
+        <div class="param"><span class="param-label">Dose</span><span class="param-value">17 g</span></div>
+        <div class="param"><span class="param-label">Yield</span><span class="param-value">40 g</span></div>
+        <div class="param"><span class="param-label">Ice</span><span class="param-value">60–80 g</span></div>
+        <div class="param"><span class="param-label">Temp</span><span class="param-value">91 °C</span></div>
+        <div class="param"><span class="param-label">Grind</span><span class="param-value">Fine</span></div>
+        <div class="param"><span class="param-label">Shot time</span><span class="param-value">32–36 s</span></div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-notes">Blueberry jam, tamarind, orange blossom — pulled over ice. The cold locks in the fruit and kills any funky edge.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-header" id="modal-head">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <span class="card-origin-badge" id="m-origin"></span>
+      <div class="card-name" id="m-name" style="font-size:22px"></div>
+      <div class="card-roaster" id="m-roaster"></div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const recipes = {
+  r4: {
+    origin: 'Colombia · La Cabana',
+    name: 'Sweet Washed Iced V60',
+    roaster: 'Local Roaster · La Cabana',
+    process: 'Washed',
+    method: 'Iced V60',
+    approved: false,
+    params: [
+      { l: 'Coffee',      v: '17 g' },
+      { l: 'Hot water',   v: '170 ml' },
+      { l: 'Ice (in server)', v: '85 g' },
+      { l: 'Temperature', v: '94 °C' },
+      { l: 'Grind',       v: 'Medium-fine' },
+      { l: 'Total time',  v: '3:00 min' },
+    ],
+    steps: [
+      '<strong>SETUP</strong> · Place 85 g of ice directly into your server or cup beneath the V60. The ice is part of the recipe — it melts into the final brew volume (~255 ml total). Rinse the filter with hot water and discard.',
+      'Grind 17 g at medium-fine. Slightly finer than a hot V60 — the concentrated brew needs a bit more extraction to compensate for the dilution from the ice.',
+      'Add grounds, level the bed, tare your scale.',
+      '<strong>BLOOM — 0:00 to 0:45</strong> · Pour 50 ml at 94 °C in a slow center spiral. The higher temp (vs. hot brew) is intentional — you need full extraction since only 170 ml of hot water is used. Stir once. Wait 45 seconds.',
+      '<strong>POUR 1 — 0:45 to 1:20</strong> · Pour to 100 ml total in tight concentric circles. The concentrated brew will drip directly onto the ice below — you\'ll hear it hit and see steam rise. This is correct.',
+      '<strong>POUR 2 — 1:30 to 2:00</strong> · Continue to 140 ml total. Keep pours slow and steady — the smaller water volume means every pour has more impact on extraction.',
+      '<strong>POUR 3 — 2:05 to 2:25</strong> · Final pour to 170 ml. End with a slow center pour.',
+      '<strong>DRAIN — 2:25 to 3:00</strong> · Let draw down fully. Swirl the server gently to help melt the ice evenly into the concentrate. Serve immediately over the remaining ice.',
+    ],
+    notes: 'This is the Japanese iced pour over method — brew hot and concentrated directly onto ice. The rapid chilling locks in the green apple and strawberry aromatics that would fade if the coffee cooled slowly. The total brew volume after ice melt is ~250 ml. Do not add more ice to the cup — the recipe accounts for dilution. The washed process makes this exceptionally clean and bright on ice.'
+  },
+
+  r5: {
+    origin: 'Colombia · La Cabana',
+    name: 'Caramel Shot Iced Espresso',
+    roaster: 'Local Roaster · DeLonghi Dedica',
+    process: 'Washed',
+    method: 'Iced Espresso',
+    approved: false,
+    params: [
+      { l: 'Dose (in)',   v: '17 g' },
+      { l: 'Yield (out)', v: '34 g' },
+      { l: 'Ice in cup',  v: '60–80 g' },
+      { l: 'Temperature', v: '94 °C' },
+      { l: 'Grind',       v: 'Fine' },
+      { l: 'Shot time',   v: '28–32 s' },
+    ],
+    steps: [
+      '<strong>SETUP</strong> · Fill your serving glass with 60–80 g of ice before pulling the shot. The shot goes directly over the ice — no waiting, no cooling separately.',
+      '<strong>DOSE & DISTRIBUTE</strong> · Weigh 17 g into the portafilter. Distribute evenly — WDT or a light tap. An even puck is even more important for iced espresso since any channeling produces sour notes that are harsh cold.',
+      '<strong>TAMP</strong> · Tamp straight and firm at ~15 kg. Consistent tamp = consistent flow = no bitter channels.',
+      '<strong>PULL</strong> · Place the ice-filled glass under the portafilter spout. Start timer and brew. First drop at 6–8 s. Pull to exactly 34 g between 28–32 s. Stop at 34 g — do not go longer.',
+      '<strong>CHILL & SERVE</strong> · The hot shot hits the ice and chills instantly. Swirl the glass once to distribute. The ice melts slightly into the shot, diluting it to the right drinking strength. Drink within 2 minutes — iced espresso oxidizes fast.',
+      '<strong>EVALUATE</strong> · Color should be deep amber. Taste: caramel sweetness, bright green apple, clean finish — no bitterness. If sour → grind finer. If bitter → grind coarser or reduce yield to 30 g.',
+    ],
+    notes: 'Pulling espresso directly over ice is the fastest and cleanest iced coffee method. The shock-chilling from the ice locks in the caramel and apple sweetness of this washed Colombian while killing any potential bitterness. Use large, dense ice cubes — small cubes melt too fast and over-dilute. This recipe does not need milk or sweetener.'
+  },
+
+  r6: {
+    origin: 'Costa Rica · El Mango',
+    name: 'Tropical Honey Iced AeroPress',
+    roaster: 'ضحى محمصة · El Mango',
+    process: 'Honey',
+    method: 'Iced AeroPress',
+    approved: false,
+    params: [
+      { l: 'Coffee',          v: '20 g' },
+      { l: 'Hot water',       v: '140 ml' },
+      { l: 'Ice (in cup)',    v: '80 g' },
+      { l: 'Temperature',     v: '88 °C' },
+      { l: 'Grind',           v: 'Medium-fine' },
+      { l: 'Total time',      v: '2:30 min' },
+    ],
+    steps: [
+      '<strong>SETUP</strong> · Place 80 g of ice into your serving glass. Set AeroPress up in inverted position. Pre-rinse paper filter in cap. The AeroPress will press concentrated coffee directly onto the ice.',
+      'Grind 20 g at medium-fine. Slightly finer than a hot AeroPress brew to compensate for the reduced water volume (140 ml instead of 220 ml).',
+      '<strong>POUR — 0:00 to 0:20</strong> · Pour all 140 ml at 88 °C in a slow spiral. The lower temp protects the honey-process mango and blueberry aromatics — critical on an iced brew where these notes are the star.',
+      '<strong>STIR — 0:20 to 0:30</strong> · Stir 12 times firmly. The concentrated brew needs full saturation — no dry grounds.',
+      '<strong>STEEP — 0:30 to 1:45</strong> · Attach cap firmly. Steep undisturbed for 75 seconds. The longer steep on a smaller volume extracts the honey-process sweetness fully.',
+      '<strong>FLIP — 1:45</strong> · Flip the AeroPress confidently directly over the ice-filled glass.',
+      '<strong>PRESS — 1:45 to 2:30</strong> · Press slowly and steadily over 45 seconds directly onto the ice. The hot concentrate hits the ice and chills instantly. Stop at the hiss. Swirl gently — the ice melts into the concentrate to reach drinking strength.',
+    ],
+    notes: 'This iced AeroPress uses a concentrated brew ratio (20 g / 140 ml) that accounts for ice dilution. The result is a 220 ml iced drink after the ice melts — full-bodied, syrupy, and tropical. The honey process on El Mango makes this the sweetest iced coffee in the collection: mango and blueberry flavors are amplified by the cold, not dulled. Never add extra ice to the finished drink — the dilution is calibrated.'
+  },
+
+  r7: {
+    origin: 'Costa Rica · El Mango',
+    name: 'Mango Honey Iced Espresso',
+    roaster: 'ضحى محمصة · DeLonghi Dedica',
+    process: 'Honey',
+    method: 'Iced Espresso',
+    approved: false,
+    params: [
+      { l: 'Dose (in)',   v: '17 g' },
+      { l: 'Yield (out)', v: '38 g' },
+      { l: 'Ice in cup',  v: '60–80 g' },
+      { l: 'Temperature', v: '92 °C' },
+      { l: 'Grind',       v: 'Fine' },
+      { l: 'Shot time',   v: '30–34 s' },
+    ],
+    steps: [
+      '<strong>SETUP</strong> · Fill serving glass with 60–80 g of large ice cubes. Warm Dedica 15+ minutes. Run a flush shot. Keep the portafilter and basket very clean — honey-process oils accumulate fast and add bitterness.',
+      '<strong>DOSE & DISTRIBUTE</strong> · Weigh 17 g. WDT is essential — honey-process grounds clump more than washed. Eliminate all dry pockets before tamping.',
+      '<strong>TAMP</strong> · Tamp straight and firm. The honey-process puck is denser — ensure the seal is even across the entire basket.',
+      '<strong>PULL</strong> · Place the ice-filled glass under the spout. Start timer, begin brew. First drop at 7–9 s. Pull to 38 g between 30–34 s. The hot shot lands directly on the ice and flash-chills.',
+      '<strong>CHILL & SERVE</strong> · Swirl immediately. The mango and blueberry flavors intensify as the shot cools rapidly. Drink within 2 minutes. The ice will continue melting — do not let it sit.',
+      '<strong>EVALUATE</strong> · Deep amber color, dense texture. Taste: honey sweetness entry, mango mid-palate, blueberry in the cold finish. If over-diluted → use fewer, larger ice cubes. If bitter → grind coarser.',
+    ],
+    notes: 'The honey-process El Mango is the most naturally sweet bean in this collection and is exceptional as an iced espresso. The cold amplifies the tropical mango and blueberry notes while completely suppressing any bitter edges. Running the Dedica at 92 °C (slightly cooler) protects the fruit aromatics during extraction. Use the largest ice cubes available — large cubes melt slowly, controlling dilution precisely. This is a standalone drink — no milk needed.'
+  },
+
+  r8: {
+    origin: 'Ethiopia · Chelchele',
+    name: 'Wild Yeast Iced V60',
+    roaster: 'Caffeine Batch · Chelchele',
+    process: 'Yeast',
+    method: 'Iced V60',
+    approved: false,
+    params: [
+      { l: 'Coffee',          v: '16 g' },
+      { l: 'Hot water',       v: '160 ml' },
+      { l: 'Ice (in server)', v: '80 g' },
+      { l: 'Temperature',     v: '93 °C' },
+      { l: 'Grind',           v: 'Medium-fine' },
+      { l: 'Total time',      v: '2:45 min' },
+    ],
+    steps: [
+      '<strong>SETUP</strong> · Place 80 g of ice in your server or cup. Rinse filter, discard water. The yeast-process Chelchele is naturally light-bodied — the iced Japanese method and 1:15 effective ratio (after melt) build sweetness without needing more water.',
+      'Grind 16 g at medium-fine, slightly finer than a standard hot V60. The concentrated brew needs a bit more extraction surface to compensate for the smaller water volume.',
+      'Add grounds, level bed, tare scale.',
+      '<strong>BLOOM — 0:00 to 0:50</strong> · Pour 48 ml at 93 °C in a tight center spiral. Wait the full 50 seconds — yeast-process coffee releases CO₂ very aggressively. A full bloom is non-negotiable or the first pour will be uneven.',
+      '<strong>POUR 1 — 0:50 to 1:20</strong> · Pour to 100 ml total in slow, tight circles. Concentrated pours — keep them controlled. The coffee dripping onto ice below will look very dark. This is correct.',
+      '<strong>POUR 2 — 1:30 to 1:55</strong> · Continue to 135 ml. Very slow, no turbulence. The yeast process makes this bean sensitive to agitation — rough pours = funky extraction.',
+      '<strong>POUR 3 — 2:00 to 2:15</strong> · Final pour to 160 ml total. A gentle center finish.',
+      '<strong>DRAIN — 2:15 to 2:45</strong> · Let draw down fully. Swirl the server to blend concentrate with ice melt. The cold immediately tames the yeast character and amplifies the blueberry and red apple. Serve immediately.',
+    ],
+    notes: 'The Chelchele yeast process on ice is a revelation — the cold eliminates any risk of the fermentation character turning funky, leaving only the blueberry, red apple, and orange blossom notes. At 93 °C (slightly higher than the hot version) the concentrated extraction is full and sweet. Total volume after ice melt is ~235 ml. The Heirloom Hurlijum variety adds a floral complexity that is best appreciated cold. This is the most complex-tasting iced coffee in the collection.'
+  },
+
+  r9: {
+    origin: 'Ethiopia · Chelchele',
+    name: 'Fermented Fruit Iced Espresso',
+    roaster: 'Caffeine Batch · DeLonghi Dedica',
+    process: 'Yeast',
+    method: 'Iced Espresso',
+    approved: false,
+    params: [
+      { l: 'Dose (in)',   v: '17 g' },
+      { l: 'Yield (out)', v: '40 g' },
+      { l: 'Ice in cup',  v: '60–80 g' },
+      { l: 'Temperature', v: '91 °C' },
+      { l: 'Grind',       v: 'Fine' },
+      { l: 'Shot time',   v: '32–36 s' },
+    ],
+    steps: [
+      '<strong>SETUP</strong> · Fill serving glass with 60–80 g of large ice. Run two flush shots on the Dedica — yeast-process residue in the group head ruins the shot. The portafilter basket must be perfectly clean.',
+      '<strong>DOSE & DISTRIBUTE</strong> · 17 g exactly. WDT is essential — this light-roasted, dense bean clumps significantly. Stir thoroughly with a thin needle before tamping to eliminate any dry channels.',
+      '<strong>TAMP</strong> · Tamp level and firm. Any angle = channeling = sour yeast taste in the cup. Take your time here.',
+      '<strong>PULL</strong> · Place ice glass under the spout. Start timer. First drop at 8–10 s (normal for a dense light roast). Pull to 40 g between 32–36 s. The shot falls directly onto ice and chills instantly.',
+      '<strong>CHILL & SERVE</strong> · Swirl the glass immediately. The rapid chilling kills the yeast fermentation edge and unlocks the blueberry jam and orange blossom in the cold. Drink within 90 seconds — this shot evolves fast on ice.',
+      '<strong>EVALUATE</strong> · Light amber crema (normal for light roast), complex aroma. Taste: blueberry sweetness, tamarind depth, orange blossom finish. If yeast/sour → pull to 42 g next time. If flat → grind finer.',
+    ],
+    notes: 'The Chelchele yeast-process iced espresso is the boldest and most complex shot in this collection. The cold is essential — it neutralizes the fermentation character that can dominate at room temperature and brings the blueberry, red apple, and tamarind into sharp focus. The 1:2.35 ratio (40 g yield) is longer than classic specifically to dilute the yeast fermentation flavor while keeping the fruit notes concentrated. On ice this becomes a perfectly balanced, fruit-forward espresso.'
+  }
+};
+
+function openModal(id) {
+  const r = recipes[id];
+  if (!r) return;
+
+  document.getElementById('m-origin').textContent = r.origin;
+  document.getElementById('m-name').textContent   = r.name;
+  document.getElementById('m-roaster').textContent = r.roaster;
+
+  const paramsHtml = r.params.map(p =>
+    `<div class="full-param"><div class="param-label">${p.l}</div><div class="param-value">${p.v}</div></div>`
+  ).join('');
+
+  const stepsHtml = r.steps.map((s, i) =>
+    `<li class="step-item"><span class="step-num">${String(i+1).padStart(2,'0')}</span><span class="step-text" style="font-size:13.5px;line-height:1.65;color:#3d342c">${s}</span></li>`
+  ).join('');
+
+  const tagsHtml = `
+    <div class="card-tags" style="margin-bottom:0">
+      <span class="tag tag-process">${r.process}</span>
+      <span class="tag tag-method">${r.method}</span>
+      ${r.approved ? '<span class="tag tag-approved">★ Approved</span>' : ''}
+    </div>`;
+
+  document.getElementById('modal-body').innerHTML = `
+    ${tagsHtml}
+    <div class="section-title" style="margin-top:20px">Parameters</div>
+    <div class="full-params">${paramsHtml}</div>
+    <div class="section-title">Brew Steps</div>
+    <ul class="step-list">${stepsHtml}</ul>
+    <div class="section-title">Tasting Notes</div>
+    <p style="font-size:13.5px;line-height:1.7;color:#3d342c">${r.notes}</p>
+  `;
+
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal')) return;
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Filter logic
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    document.querySelectorAll('.card').forEach(card => {
+      const show =
+        f === 'all'      ? true :
+        f === 'approved' ? card.dataset.approved === 'true' :
+        f === 'espresso' ? card.dataset.type === 'espresso' :
+        card.dataset.origin === f || card.dataset.process === f;
+      card.classList.toggle('hidden', !show);
+    });
+  });
+});
+</script>
+
+</body>
+</html>
